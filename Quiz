@@ -1,0 +1,155 @@
+/*Juan Camilo Zamora Reyes 
+Mauricio Orozco Montilla*/
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+
+using namespace std;
+
+struct Cliente {
+    int id;
+    char nombre[30];
+    int edad;
+    char genero;
+    char motivo[50];
+    Cliente* siguiente;
+};
+
+// Estructuras para la cola (FIFO) y la pila (LIFO)
+struct Cola {
+    Cliente *frente, *final;
+} espera = {NULL, NULL};
+
+struct Pila {
+    Cliente *tope;
+} historial = {NULL};
+
+int m = 0, f = 0;
+
+// Función para agregar cliente a la cola
+void agregarCliente() {
+    Cliente nuevo;
+    cout << "Ingrese ID: ";
+    cin >> nuevo.id;
+    cin.ignore();
+    cout << "Ingrese Nombre: ";
+    cin.getline(nuevo.nombre, 30);
+    cout << "Ingrese Edad: ";
+    cin >> nuevo.edad;
+    if (nuevo.edad < 18) {
+        cout << "No se permite agregar menores de edad.\n";
+        return;
+    }
+    cout << "Ingrese Género (M/F): ";
+    cin >> nuevo.genero;
+    cout << "Ingrese Motivo de la llamada: ";
+    cin.ignore();
+    cin.getline(nuevo.motivo, 50);
+    
+    // Validación de balance de género
+    int diferencia = m - f;
+    if ((nuevo.genero == 'F' || nuevo.genero == 'f') && (diferencia >= 4 || f >= 4)) {
+        cout << "No se permiten más Mujeres\n";
+        return;
+    } else if ((nuevo.genero == 'M' || nuevo.genero == 'm') && (diferencia <= -4 || m >= 4)) {
+        cout << "No se permiten más Hombres\n";
+        return;
+    }
+    
+    // Actualización de contador de género
+    if (nuevo.genero == 'F' || nuevo.genero == 'f') f++;
+    else if (nuevo.genero == 'M' || nuevo.genero == 'm') m++;
+    
+    Cliente* nuevoPtr = (Cliente*)malloc(sizeof(Cliente));
+    *nuevoPtr = nuevo;
+    nuevoPtr->siguiente = NULL;
+    
+    if (espera.frente == NULL) {
+        espera.frente = espera.final = nuevoPtr;
+    } else {
+        espera.final->siguiente = nuevoPtr;
+        espera.final = nuevoPtr;
+    }
+    cout << "Cliente agregado a la cola correctamente.\n";
+}
+
+// Función para mostrar clientes en espera
+void mostrarClientes() {
+    Cliente* temp = espera.frente;
+    while (temp) {
+        cout << "ID: " << temp->id << " - Nombre: " << temp->nombre << " - Edad: " << temp->edad << " - Género: " << temp->genero << " - Motivo: " << temp->motivo << "\n";
+        temp = temp->siguiente;
+    }
+}
+
+// Función para contar clientes en espera
+int contarClientes() {
+    int contador = 0;
+    Cliente* temp = espera.frente;
+    while (temp) {
+        contador++;
+        temp = temp->siguiente;
+    }
+    return contador;
+}
+
+// Función para atender cliente (sacarlo de la cola y agregarlo a la pila)
+void atenderCliente() {
+    if (espera.frente == NULL) {
+        cout << "No hay clientes en espera.\n";
+        return;
+    }
+    Cliente* atendido = espera.frente;
+    espera.frente = espera.frente->siguiente;
+    if (!espera.frente) espera.final = NULL;
+    
+    // Agregar a la pila
+    atendido->siguiente = historial.tope;
+    historial.tope = atendido;
+    cout << "Cliente atendido y agregado al historial.\n";
+}
+
+// Función para mostrar historial de atenciones
+void mostrarHistorial() {
+    Cliente* temp = historial.tope;
+    while (temp) {
+        cout << "ID: " << temp->id << " - Nombre: " << temp->nombre << " - Edad: " << temp->edad << " - Género: " << temp->genero << " - Motivo: " << temp->motivo << "\n";
+        temp = temp->siguiente;
+    }
+}
+
+// Función para deshacer última atención
+void deshacerAtencion() {
+    if (historial.tope == NULL) {
+        cout << "No hay atenciones para deshacer.\n";
+        return;
+    }
+    Cliente* deshacer = historial.tope;
+    historial.tope = historial.tope->siguiente;
+    
+    // Reinserción en la cola
+    deshacer->siguiente = espera.frente;
+    espera.frente = deshacer;
+    if (espera.final == NULL) espera.final = deshacer;
+    cout << "Última atención deshecha, cliente reintegrado.\n";
+}
+
+// Menú principal
+int main() {
+    int opcion;
+    do {
+        cout << "\n1. Agregar cliente\n2. Mostrar clientes en espera\n3. Contar clientes\n4. Atender cliente\n5. Mostrar historial\n6. Deshacer última atención\n7. Salir\nIngrese opción: ";
+        cin >> opcion;
+        switch (opcion) {
+            case 1: agregarCliente(); break;
+            case 2: mostrarClientes(); break;
+            case 3: cout << "Clientes en espera: " << contarClientes() << "\n"; break;
+            case 4: atenderCliente(); break;
+            case 5: mostrarHistorial(); break;
+            case 6: deshacerAtencion(); break;
+            case 7: cout << "Saliendo...\n"; break;
+            default: cout << "Opción inválida.\n";
+        }
+    } while (opcion != 7);
+    return 0;
+}
